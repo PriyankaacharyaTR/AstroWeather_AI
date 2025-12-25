@@ -1,38 +1,224 @@
-.App {
-  text-align: center;
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+.app-container {
+  height: 100vh;
+  background: radial-gradient(circle at center, #0a1128 0%, #000 100%);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  color: white;
+  padding: 2rem;
+  box-sizing: border-box;
 }
 
-.App-logo {
-  height: 40vmin;
+.stars {
+  position: absolute;
+  width: 100%; height: 100%;
+  background: url('https://www.transparenttextures.com/patterns/stardust.png');
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* BIG CINEMATIC COMET STYLING */
+.big-comet-container {
+  position: absolute;
+  z-index: 5;
   pointer-events: none;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.comet-head-green {
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 
+    0 0 15px 5px #fff,
+    0 0 30px 10px #22d3ee, /* Cyan-Green glow */
+    0 0 60px 20px rgba(34, 211, 238, 0.3);
+  position: relative;
+  z-index: 2;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.comet-tail-long {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
+  width: 350px; /* Long trailing tail */
+  height: 12px;
+  background: linear-gradient(to left, rgba(34, 211, 238, 0.8), rgba(168, 85, 247, 0.2), transparent);
+  filter: blur(4px);
+  border-radius: 50%;
+}
+
+.comet-glow {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100px; height: 100px;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.2) 0%, transparent 70%);
+}
+
+/* DASHBOARD STYLES */
+.dashboard-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.comet {
+  position: absolute;
+  width: 4px; height: 4px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 0 20px 2px #00f2ff, -20px 0 30px 5px rgba(0, 242, 255, 0.4);
+  z-index: 1;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 3rem;
+  border-radius: 24px;
+  z-index: 10;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  max-width: 600px;
+  width: 90%;
+}
+
+.sun {
+  position: absolute;
+  width: 120px; height: 120px;
+  background: radial-gradient(#fff700, #ff8800);
+  border-radius: 50%;
+  box-shadow: 0 0 80px #ff6600;
+  top: 70%; right: 10%;
+}
+
+.earth-orbit {
+  position: absolute;
+  width: 300px; height: 300px;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 50%;
+  top: 70%; right: 10%;
+  margin-top: -90px; margin-right: -90px;
+}
+
+.planet.earth {
+  width: 25px; height: 25px;
+  background: #2196f3;
+  border-radius: 50%;
+  position: absolute;
+  top: 0; left: 50%;
+}
+
+.input-section {
+  margin: 3rem 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+  gap: 1.5rem;
+}
+
+.input-section input {
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
   color: white;
+  font-size: 1.1rem;
+  width: 200px;
+  text-align: center;
 }
 
-.App-link {
-  color: #61dafb;
+.input-section button {
+  padding: 1rem 2rem;
+  background: linear-gradient(45deg, #00f2ff, #0099cc);
+  border: none;
+  border-radius: 12px;
+  color: #000;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.results {
+  margin-top: 3rem;
+  padding: 2rem;
+  background: rgba(0, 242, 255, 0.05);
+  border-radius: 16px;
+  border: 1px solid rgba(0, 242, 255, 0.2);
+}
+
+.temp-display h2 {
+  font-size: 5rem;
+  font-weight: bold;
+  color: #00f2ff;
+  text-shadow: 0 0 20px rgba(0, 242, 255, 0.5);
+  background: linear-gradient(45deg, #00f2ff, #0099cc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glass-card header h1 {
+  font-size: 3.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  background: linear-gradient(45deg, #00f2ff, #ffffff, #ff6b6b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glass-card header h1 span { color: #ff6b6b; }
+
+.icon { margin-right: 0.5rem; width: 2rem; height: 2rem; vertical-align: middle; }
+
+/* LANDING OVERLAY STYLES */
+.landing-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  background: radial-gradient(circle at center, #0a1128 0%, #000 100%);
+}
+
+.landing-content { text-align: center; z-index: 101; }
+
+.welcome-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 3.5rem;
+  color: #00f2ff;
+  display: flex;
+  gap: 2px;
+  text-shadow: 0 0 20px rgba(0, 242, 255, 0.5);
+}
+
+.tagline {
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 3px;
+  margin: 20px 0 40px;
+  font-size: 1.2rem;
+}
+
+.mission-button {
+  background: transparent;
+  border: 2px solid #00f2ff;
+  color: #00f2ff;
+  padding: 15px 40px;
+  border-radius: 50px;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 4px;
+  cursor: pointer;
+  transition: 0.3s all;
 }
