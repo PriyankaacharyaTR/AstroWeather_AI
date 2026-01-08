@@ -1,0 +1,6 @@
+{
+  "astronomy": ["planet", "orbit", "longitude", "motion", "eclipse"],
+  "weather": ["rain", "cloud", "wind", "storm", "monsoon"],
+  "time_cycles": ["yuga", "kalpa", "cycle", "period"],
+  "planets": ["sun", "moon", "jupiter", "saturn", "mars", "venus", "mercury"]
+}

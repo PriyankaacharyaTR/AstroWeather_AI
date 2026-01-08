@@ -4,10 +4,12 @@
 /node_modules
 /.pnp
 .pnp.js
-
+.pkl
+__pychache
 # testing
 /coverage
-
+/raw_pdfs
+/raw_text
 # production
 /build
 

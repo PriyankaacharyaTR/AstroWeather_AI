@@ -3,6 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Thermometer, Orbit } from 'lucide-react';
 import axios from 'axios';
 import './App.css';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import AskMore from "./AskMore";
+import ModelInfo from "./ModelInfo";
+
 
 // --- SUB-COMPONENT: Sequential Letter Animation ---
 const WelcomeText = ({ text }) => {
@@ -50,6 +54,12 @@ const App = () => {
   };
 
   return (
+      <Router>
+    <Routes>
+      <Route path="/model-info" element={<ModelInfo />} />
+      <Route
+        path="/"
+        element={
     <div className="app-container">
       <div className="stars" />
 
@@ -120,7 +130,36 @@ const App = () => {
                 <div className="planet earth" />
               </motion.div>
             </div>
+            <div className="panel-wrapper">
+              {/* LEFT ATTACHED BUTTONS */}
+              <div className="side-buttons">
+                <motion.button
+                  className="side-btn"
+                  whileHover={{ x: -6, scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => window.open('http://127.0.0.1:5500/Frontend/index.html', '_blank')}
+                >
+                  Simulation
+                </motion.button>
 
+                <motion.button
+                  className="side-btn"
+                  whileHover={{ x: -6, scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => window.location.href = "/ask-more"}
+                >
+                  Ask More
+                </motion.button>
+                <motion.button
+                  className="side-btn secondary"
+                  whileHover={{ x: -6, scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => window.location.href = "/model-info"}
+                >
+                  Model Info
+                </motion.button>
+
+              </div>
             <main className="glass-card">
               <header>
                 <h1><Orbit className="icon" /> AstroWeather <span>AI</span></h1>
@@ -150,10 +189,18 @@ const App = () => {
                 )}
               </AnimatePresence>
             </main>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
+    }
+      />
+
+      <Route path="/ask-more" element={<AskMore />} />
+      
+    </Routes>
+  </Router>
   );
 };
 

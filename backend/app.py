@@ -3,12 +3,17 @@ from flask_cors import CORS
 import pandas as pd
 from joblib import load
 from get_planets import get_planet_features
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'rag', 'app'))
+from chatbot import ask
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for React app
 
 # Load the model
-model = load("weather_planet_model.pkl")
+model_path = os.path.join(os.path.dirname(__file__), 'weather_planet_model.pkl')
+model = load(model_path)
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -32,6 +37,19 @@ def predict():
             'date': date_str,
             'features': features_dict
         })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    data = request.get_json()
+    query = data.get('query')
+    if not query:
+        return jsonify({'error': 'Query is required'}), 400
+
+    try:
+        result = ask(query)
+        return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

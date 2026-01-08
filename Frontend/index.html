@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Planetary Simulation</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap">
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      height: 100vh;
+      background: radial-gradient(circle at center, #0a1128 0%, #000 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      color: white;
+      padding: 2rem;
+      box-sizing: border-box;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .stars {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: url('https://www.transparenttextures.com/patterns/stardust.png');
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    .glass-card {
+      background: rgba(22, 0, 84, 0.02);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 2rem;
+      border-radius: 24px;
+      z-index: 10;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .input-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .input-section input {
+      padding: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      background: rgba(35, 3, 95, 0.05);
+      color: white;
+      font-size: 1.1rem;
+      width: 200px;
+      text-align: center;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .input-section input[type="range"] {
+      width: 300px;
+    }
+
+    .control-buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .control-buttons button {
+      padding: 0.5rem 1rem;
+      background: linear-gradient(45deg, #00f2ff, #0099cc);
+      border: none;
+      border-radius: 12px;
+      color: #000;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1.1rem;
+      transition: all 0.3s ease;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .control-buttons button:hover {
+      transform: scale(1.05);
+    }
+    .planet-card {
+      position: absolute;
+      padding: 5px 7px;
+      background: rgba(20, 20, 60, 0.5);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.5);
+      pointer-events: none;
+      transform: translate(-50%, -120%);
+      white-space: nowrap;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    }
+
+    #temperature {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(255, 255, 255, 0.02);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: white;
+      padding: 1rem;
+      border-radius: 12px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="stars"></div>
+  <div id="temperature">Temperature: --</div>
+  <div class="glass-card">
+    <div class="input-section">
+      <input type="date" id="datePicker" value="2025-01-01">
+      <input type="range" id="slider" min="0.1" max="5" step="0.1" value="1">
+    </div>
+    <div class="control-buttons">
+      <button id="left">◀</button>
+      <button id="up">▲</button>
+      <button id="down">▼</button>
+      <button id="right">▶</button>
+      <button id="playPause">▶ Play</button>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
