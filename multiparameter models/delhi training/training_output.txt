@@ -1,0 +1,140 @@
+================================================================================
+🌡️  DELHI WEATHER PREDICTION MODEL TRAINING
+================================================================================
+
+📅 Input Features: ['Year', 'Month', 'Day', 'DayOfYear', 'WeekOfYear']
+🎯 Target Parameters: ['T2M', 'PS', 'QV2M', 'WS2M', 'GWETTOP']
+📊 Total samples: 2181
+🔀 Train samples: 1744, Test samples: 437
+
+⏳ Training model...
+✅ Model trained successfully!
+
+📊 PERFORMANCE (Per Parameter)
+==================================================
+T2M        | MAE: 0.9240 | R²: 0.9721
+PS         | MAE: 0.1151 | R²: 0.9510
+QV2M       | MAE: 0.7595 | R²: 0.9722
+WS2M       | MAE: 0.4818 | R²: 0.2986
+GWETTOP    | MAE: 0.0181 | R²: 0.9637
+==================================================
+OVERALL    | MAE: 0.4597 | R²: 0.8315
+
+🔥 FEATURE IMPORTANCE (Averaged)
+----------------------------------------
+DayOfYear     0.667481
+WeekOfYear    0.132715
+Year          0.125462
+Day           0.069251
+Month         0.005092
+dtype: float64
+
+💾 Saved results to: delhi_weather_prediction_results.csv
+🤖 Model saved as: delhi_weather_model.pkl
+
+📋 SAMPLE PREDICTIONS (first 10)
+================================================================================
+
+📅 Date: 2020-10-09
+----------------------------------------
+  T2M      | Actual:    27.60 | Predicted:    27.66 | Error: 0.06
+  PS       | Actual:    98.54 | Predicted:    98.33 | Error: 0.21
+  QV2M     | Actual:     8.05 | Predicted:     8.12 | Error: 0.07
+  WS2M     | Actual:     1.21 | Predicted:     1.92 | Error: 0.71
+  GWETTOP  | Actual:     0.33 | Predicted:     0.33 | Error: 0.00
+
+📅 Date: 2021-04-24
+----------------------------------------
+  T2M      | Actual:    27.47 | Predicted:    29.19 | Error: 1.72
+  PS       | Actual:    98.52 | Predicted:    98.33 | Error: 0.19
+  QV2M     | Actual:     5.44 | Predicted:     5.59 | Error: 0.15
+  WS2M     | Actual:     3.34 | Predicted:     2.33 | Error: 1.01
+  GWETTOP  | Actual:     0.16 | Predicted:     0.14 | Error: 0.02
+
+📅 Date: 2022-11-30
+----------------------------------------
+  T2M      | Actual:    16.42 | Predicted:    16.82 | Error: 0.40
+  PS       | Actual:    99.18 | Predicted:    99.09 | Error: 0.09
+  QV2M     | Actual:     7.25 | Predicted:     6.75 | Error: 0.50
+  WS2M     | Actual:     1.36 | Predicted:     1.34 | Error: 0.02
+  GWETTOP  | Actual:     0.51 | Predicted:     0.51 | Error: 0.00
+
+📅 Date: 2023-06-09
+----------------------------------------
+  T2M      | Actual:    35.76 | Predicted:    35.84 | Error: 0.08
+  PS       | Actual:    97.55 | Predicted:    97.53 | Error: 0.02
+  QV2M     | Actual:    11.39 | Predicted:    11.15 | Error: 0.24
+  WS2M     | Actual:     2.88 | Predicted:     2.68 | Error: 0.20
+  GWETTOP  | Actual:     0.25 | Predicted:     0.26 | Error: 0.01
+
+📅 Date: 2021-05-22
+----------------------------------------
+  T2M      | Actual:    29.68 | Predicted:    28.64 | Error: 1.04
+  PS       | Actual:    98.04 | Predicted:    97.97 | Error: 0.07
+  QV2M     | Actual:    13.13 | Predicted:    12.20 | Error: 0.93
+  WS2M     | Actual:     1.85 | Predicted:     1.94 | Error: 0.09
+  GWETTOP  | Actual:     0.46 | Predicted:     0.48 | Error: 0.02
+
+📅 Date: 2021-05-10
+----------------------------------------
+  T2M      | Actual:    34.56 | Predicted:    33.01 | Error: 1.55
+  PS       | Actual:    97.97 | Predicted:    98.13 | Error: 0.16
+  QV2M     | Actual:     8.36 | Predicted:     8.64 | Error: 0.28
+  WS2M     | Actual:     1.26 | Predicted:     1.82 | Error: 0.56
+  GWETTOP  | Actual:     0.24 | Predicted:     0.22 | Error: 0.02
+
+📅 Date: 2021-02-20
+----------------------------------------
+  T2M      | Actual:    17.76 | Predicted:    18.79 | Error: 1.03
+  PS       | Actual:    99.41 | Predicted:    99.19 | Error: 0.22
+  QV2M     | Actual:     4.39 | Predicted:     4.68 | Error: 0.29
+  WS2M     | Actual:     1.66 | Predicted:     2.07 | Error: 0.41
+  GWETTOP  | Actual:     0.32 | Predicted:     0.32 | Error: 0.00
+
+📅 Date: 2025-07-04
+----------------------------------------
+  T2M      | Actual:    31.73 | Predicted:    32.30 | Error: 0.57
+  PS       | Actual:    97.56 | Predicted:    97.49 | Error: 0.07
+  QV2M     | Actual:    20.27 | Predicted:    19.57 | Error: 0.70
+  WS2M     | Actual:     2.19 | Predicted:     2.00 | Error: 0.19
+  GWETTOP  | Actual:     0.43 | Predicted:     0.44 | Error: 0.01
+
+📅 Date: 2022-12-07
+----------------------------------------
+  T2M      | Actual:    13.56 | Predicted:    14.67 | Error: 1.11
+  PS       | Actual:    99.04 | Predicted:    99.13 | Error: 0.09
+  QV2M     | Actual:     5.52 | Predicted:     6.15 | Error: 0.63
+  WS2M     | Actual:     2.70 | Predicted:     2.10 | Error: 0.60
+  GWETTOP  | Actual:     0.49 | Predicted:     0.49 | Error: 0.00
+
+📅 Date: 2023-02-25
+----------------------------------------
+  T2M      | Actual:    21.51 | Predicted:    21.15 | Error: 0.36
+  PS       | Actual:    99.17 | Predicted:    99.12 | Error: 0.05
+  QV2M     | Actual:     5.34 | Predicted:     5.00 | Error: 0.34
+  WS2M     | Actual:     1.46 | Predicted:     1.67 | Error: 0.21
+  GWETTOP  | Actual:     0.35 | Predicted:     0.35 | Error: 0.00
+
+================================================================================
+🔮 EXAMPLE: Predicting weather for a specific date
+================================================================================
+
+📅 Weather Prediction for 2024-06-15:
+----------------------------------------
+  T2M     : 39.93
+  PS      : 97.41
+  QV2M    : 10.30
+  WS2M    : 4.41
+  GWETTOP : 0.12
+
+📅 Weather Prediction for 2025-01-01:
+----------------------------------------
+  T2M     : 12.76
+  PS      : 99.33
+  QV2M    : 4.51
+  WS2M    : 2.07
+  GWETTOP : 0.39
+
+================================================================================
+📄 Training output saved to: training_output.txt
+================================================================================
