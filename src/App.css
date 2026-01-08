@@ -182,6 +182,17 @@
 
 .icon { margin-right: 0.5rem; width: 2rem; height: 2rem; vertical-align: middle; }
 
+.mission-button {
+  background: transparent;
+  border: 2px solid #00f2ff;
+  color: #00f2ff;
+  padding: 15px 40px;
+  border-radius: 50px;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 4px;
+  cursor: pointer;
+  transition: 0.3s all;
+}
 /* LANDING OVERLAY STYLES */
 .landing-overlay {
   position: absolute;
@@ -211,14 +222,88 @@
   font-size: 1.2rem;
 }
 
-.mission-button {
-  background: transparent;
-  border: 2px solid #00f2ff;
-  color: #00f2ff;
-  padding: 15px 40px;
-  border-radius: 50px;
-  font-family: 'Orbitron', sans-serif;
-  letter-spacing: 4px;
+.model-info-card {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.model-info-scroll {
+  padding: 1rem;
+}
+/* PANEL WRAPPER */
+.panel-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* LEFT BUTTON CONTAINER */
+.side-buttons {
+  position: absolute;
+  left: -165px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  z-index: 20;
+  margin-top: 20rem;
+}
+/* MODEL INFO SCROLL FIX */
+.model-info-card {
+  max-width: 900px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.model-info-scroll {
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+/* Optional: futuristic scrollbar */
+.model-info-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.model-info-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(#00f2ff, #6366f1);
+  border-radius: 6px;
+}
+
+/* BASE BUTTON STYLE */
+.side-btn {
+  width: 160px;
+  padding: 14px 18px;
+  border-radius: 18px 0 0 18px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: linear-gradient(
+    135deg,
+    rgba(0,242,255,0.25),
+    rgba(0,153,204,0.15)
+  );
+  color: white;
+  font-weight: 600;
+  letter-spacing: 0.5px;
   cursor: pointer;
-  transition: 0.3s all;
+  backdrop-filter: blur(14px);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.05),
+    0 10px 30px rgba(0,0,0,0.4);
+  transition: all 0.3s ease;
+}
+
+/* SECONDARY BUTTON */
+.side-btn.secondary {
+  background: linear-gradient(
+    135deg,
+    rgba(168,85,247,0.25),
+    rgba(99,102,241,0.15)
+  );
+}
+
+/* HOVER GLOW */
+.side-btn:hover {
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.15),
+    0 0 25px rgba(0,242,255,0.4);
 }
