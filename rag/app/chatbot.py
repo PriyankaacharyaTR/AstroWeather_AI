@@ -10,7 +10,7 @@ load_dotenv()
 # ----------------------------
 # Groq client
 # ----------------------------
-client = Groq(api_key="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")
+client = Groq(api_key="REPLACE WITH GROQ API KEY")
 MODEL_NAME = "llama-3.1-8b-instant"
 
 # ----------------------------
