@@ -1,11 +1,20 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Thermometer, Orbit } from 'lucide-react';
+import { Thermometer, Orbit, Gauge, Droplets, Wind, Cloud } from 'lucide-react';
 import axios from 'axios';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import AskMore from "./AskMore";
 import ModelInfo from "./ModelInfo";
+
+// Parameter mapping with friendly names, units, and icons
+const PARAMETER_INFO = {
+  T2M: { name: 'Air Temperature', unit: '°C', icon: Thermometer },
+  PS: { name: 'Atm Pressure', unit: 'kPa', icon: Gauge },
+  QV2M: { name: 'Specific Humidity', unit: 'g/kg', icon: Droplets },
+  GWETTOP: { name: 'Top Soil Wetness', unit: '', icon: Cloud },
+  WS2M: { name: 'Wind Speed', unit: 'm/s', icon: Wind },
+};
 
 
 // --- SUB-COMPONENT: Sequential Letter Animation ---
@@ -37,19 +46,53 @@ const WelcomeText = ({ text }) => {
 const App = () => {
   const [showLanding, setShowLanding] = useState(true); 
   const [date, setDate] = useState('');
+  const [city, setCity] = useState('bengaluru');
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [summary, setSummary] = useState('');
+  const [summarizing, setSummarizing] = useState(false);
 
   const getPrediction = async () => {
     if (!date) return;
     setLoading(true);
+    setError(null);
     try {
-      const response = await axios.post('http://127.0.0.1:5000/predict', { date });
+      const endpoint =
+        city === 'bengaluru'
+          ? 'http://127.0.0.1:5000/predict-bangaluru'
+          : 'http://127.0.0.1:5000/predict-delhi';
+
+      const response = await axios.post(endpoint, { date });
       setPrediction(response.data);
     } catch (err) {
       console.error("Backend unreachable", err);
+      setError('Unable to fetch prediction. Check server status.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSummarize = async () => {
+    if (!prediction || !prediction.predictions) {
+      setError('Please fetch weather predictions first.');
+      return;
+    }
+
+    setSummarizing(true);
+    try {
+      const response = await axios.post('http://127.0.0.1:5000/summarize', {
+        weather: prediction.predictions,
+        planets: {},
+        city: city,
+        date: date
+      });
+      setSummary(response.data.summary);
+    } catch (err) {
+      console.error("Summarize failed", err);
+      setError('Unable to generate summary. Please try again.');
+    } finally {
+      setSummarizing(false);
     }
   };
 
@@ -167,24 +210,121 @@ const App = () => {
               </header>
 
               <section className="input-section">
-                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                <div className="input-row">
+                  <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                  <select value={city} onChange={(e) => setCity(e.target.value)}>
+                    <option value="bengaluru">Bengaluru</option>
+                    <option value="delhi">Delhi</option>
+                  </select>
+                </div>
                 <button onClick={getPrediction} disabled={loading}>
                   {loading ? "Analyzing NASA Vectors..." : "Initiate Prediction"}
                 </button>
               </section>
 
               <AnimatePresence>
-                {prediction && (
+                {error && (
+                  <motion.div
+                    className="results error-card"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                  >
+                    {error}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {prediction && prediction.predictions && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="results"
                   >
-                    <div className="temp-display">
-                      <Thermometer />
-                      <h2>{prediction.temperature}°C</h2>
+                    <div className="results-header">
+                      <div className="temp-display">
+                        <Thermometer />
+                        <h2>{prediction.predictions.T2M ?? '--'}°C</h2>
+                      </div>
+                      <div className="status-block">
+                        <p className="status">Target Date: {prediction.date}</p>
+                        <p className="status sub">City: {city === 'bengaluru' ? 'Bengaluru' : 'Delhi'}</p>
+                      </div>
                     </div>
-                    <p className="status">Target Date: {date}</p>
+
+                    <div className="metrics-grid">
+                      {Object.entries(prediction.predictions).map(([key, value]) => {
+                        const info = PARAMETER_INFO[key] || { name: key, unit: '', icon: Cloud };
+                        const IconComponent = info.icon;
+                        return (
+                          <div className="metric-card" key={key}>
+                            <div className="metric-label">
+                              <IconComponent size={18} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                              {info.name}
+                            </div>
+                            <div className="metric-value">
+                              {value}{info.unit && <span style={{ fontSize: '0.8em', marginLeft: '0.3em' }}>{info.unit}</span>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <motion.button
+                      className="summarize-button"
+                      onClick={handleSummarize}
+                      disabled={summarizing}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      style={{
+                        marginTop: '2rem',
+                        padding: '0.9rem 2rem',
+                        background: 'linear-gradient(45deg, #6366f1, #00f2ff)',
+                        border: 'none',
+                        borderRadius: '12px',
+                        color: '#000',
+                        cursor: summarizing ? 'not-allowed' : 'pointer',
+                        fontWeight: 'bold',
+                        fontSize: '1rem',
+                        fontFamily: 'Orbitron, sans-serif',
+                        opacity: summarizing ? 0.6 : 1,
+                        boxShadow: '0 4px 15px rgba(0, 242, 255, 0.3)'
+                      }}
+                    >
+                      {summarizing ? '🌌 Generating Summary...' : '✨ Summarize Weather Report'}
+                    </motion.button>
+
+                    {summary && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="results"
+                        style={{ marginTop: '1.5rem', textAlign: 'left' }}
+                      >
+                        <h3 style={{
+                          margin: '0 0 1.5rem 0',
+                          fontSize: '1.2rem',
+                          color: '#00f2ff',
+                          letterSpacing: '1px',
+                          fontWeight: '700',
+                          borderBottom: '2px solid rgba(0, 242, 255, 0.2)',
+                          paddingBottom: '0.75rem'
+                        }}>
+                          WEATHER SUMMARY REPORT
+                        </h3>
+                        <div style={{
+                          whiteSpace: 'pre-wrap',
+                          wordWrap: 'break-word',
+                          lineHeight: 1.8,
+                          color: 'rgba(255, 255, 255, 0.9)',
+                          fontSize: '0.95rem',
+                          fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+                          textAlign: 'justify'
+                        }}>
+                          {summary}
+                        </div>
+                      </motion.div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>

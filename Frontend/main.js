@@ -1,3 +1,11 @@
+const PARAMETER_INFO = {
+  T2M: { name: 'Air Temperature', unit: '°C' },
+  PS: { name: 'Atm Pressure', unit: 'kPa' },
+  QV2M: { name: 'Specific Humidity', unit: 'g/kg' },
+  GWETTOP: { name: 'Top Soil Wetness', unit: '' },
+  WS2M: { name: 'Wind Speed', unit: 'm/s' },
+};
+
 const ORBITAL_DATA = {
   mercury: { period: 88 },
   venus: { period: 224.7 },
@@ -197,8 +205,14 @@ playPauseBtn.addEventListener("click", () => {
 const datePicker = document.getElementById("datePicker");
 
 function fetchTemperature(dateStr) {
-  //fetch(http://127.0.0.1:5000/predict?date=${dateStr})
-  fetch('http://127.0.0.1:5000/predict', {
+  const citySelect = document.getElementById("citySelect");
+  const city = citySelect ? citySelect.value : "bengaluru";
+  
+  const endpoint = city === "bengaluru" 
+    ? 'http://127.0.0.1:5000/predict-bangaluru'
+    : 'http://127.0.0.1:5000/predict-delhi';
+
+  fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -210,12 +224,25 @@ function fetchTemperature(dateStr) {
       return res.json();
     })
     .then(data => {
-      document.getElementById("temperature").textContent =
-        `Temperature: ${data.temperature} °C`;
+      const predictions = data.predictions;
+      const cityName = city === "bengaluru" ? "Bengaluru" : "Delhi";
+      
+      // Store weather data for summarize function
+      currentWeatherData = predictions;
+      
+      let weatherHTML = `<div style="margin-bottom: 0.8rem; font-size: 1.1rem; color: #00f2ff;">${cityName} Weather</div>`;
+      
+      Object.entries(predictions).forEach(([key, value]) => {
+        const info = PARAMETER_INFO[key] || { name: key, unit: '' };
+        const unit = info.unit ? ` ${info.unit}` : '';
+        weatherHTML += `<span class="param-label">${info.name}:</span> ${value ?? '--'}${unit}<br>`;
+      });
+      
+      document.getElementById("temperature").innerHTML = weatherHTML;
     })
     .catch(err => {
       console.error("Temperature fetch failed:", err);
-      document.getElementById("temperature").textContent = "Temperature: Error";
+      document.getElementById("temperature").textContent = "Weather: Error";
     });
 }
 
@@ -230,6 +257,14 @@ datePicker.addEventListener("change", () => {
   updatePlanetCards();
   Object.values(planetCards).forEach(c => c.style.display = "block");
 });
+
+// On city change
+const citySelect = document.getElementById("citySelect");
+if (citySelect) {
+  citySelect.addEventListener("change", () => {
+    fetchTemperature(datePicker.value);
+  });
+}
 
 // Camera controls
 let cameraAngle = 0;
@@ -256,6 +291,80 @@ document.getElementById("down").addEventListener("click", () => {
 let timeScale = 1;
 document.getElementById("slider").addEventListener("input", e => {
   timeScale = parseFloat(e.target.value);
+});
+
+// Weather data storage for potential reuse
+let currentWeatherData = null;
+
+// Summarize button handler (guarded because the button lives in React now)
+const summarizeBtn = document.getElementById("summarizeBtn");
+if (summarizeBtn) {
+  summarizeBtn.addEventListener("click", async () => {
+    const datePicker = document.getElementById("datePicker");
+    const citySelect = document.getElementById("citySelect");
+    const city = citySelect.value;
+    const date = datePicker.value;
+    
+    summarizeBtn.disabled = true;
+    summarizeBtn.textContent = "Generating...";
+    
+    try {
+      // Collect current planet data
+      const planetData = {};
+      Object.entries(planets).forEach(([name, planet]) => {
+        planetData[name] = {
+          angle: planet.userData.angle,
+          influence: PLANET_WEIGHTS[name] * Math.sin(planet.userData.angle)
+        };
+      });
+      
+      if (!currentWeatherData) {
+        document.getElementById("summaryText").textContent = "Please fetch weather data first by changing the date.";
+        document.getElementById("summaryModal").classList.add("active");
+        summarizeBtn.disabled = false;
+        summarizeBtn.textContent = "✨ Summarize";
+        return;
+      }
+      
+      const response = await fetch('http://127.0.0.1:5000/summarize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          weather: currentWeatherData,
+          planets: planetData,
+          city: city,
+          date: date
+        })
+      });
+      
+      if (!response.ok) throw new Error("Failed to summarize");
+      const data = await response.json();
+      
+      document.getElementById("summaryText").textContent = data.summary;
+      document.getElementById("summaryModal").classList.add("active");
+    } catch (err) {
+      console.error("Summarize failed:", err);
+      document.getElementById("summaryText").textContent = "Error generating summary. Please try again.";
+      document.getElementById("summaryModal").classList.add("active");
+    } finally {
+      summarizeBtn.disabled = false;
+      summarizeBtn.textContent = "✨ Summarize";
+    }
+  });
+}
+
+// Close summary modal
+document.getElementById("closeSummary").addEventListener("click", () => {
+  document.getElementById("summaryModal").classList.remove("active");
+});
+
+// Close modal on background click
+document.getElementById("summaryModal").addEventListener("click", (e) => {
+  if (e.target.id === "summaryModal") {
+    document.getElementById("summaryModal").classList.remove("active");
+  }
 });
 
 // Animation loop

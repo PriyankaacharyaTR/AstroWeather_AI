@@ -148,11 +148,6 @@ export default function ModelInfo() {
         </section>
 
         <section className="results">
-          <h3>Latest Model Results</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "0.75rem", marginBottom: "1rem" }}>
-            <div className="glass-card" style={{ padding: "0.75rem" }}>MAE (°C): {performance.mae}</div>
-            <div className="glass-card" style={{ padding: "0.75rem" }}>R² Accuracy: {performance.r2}</div>
-          </div>
 
           <h4>Top Features (Importance)</h4>
           <div style={{ overflowX: "auto" }}>
@@ -233,34 +228,34 @@ export default function ModelInfo() {
 
         <section className="results">
           <h3>Visual Gallery</h3>
-          <p style={{ marginTop: 0, marginBottom: "0.5rem" }}>Model visualizations and analysis plots.</p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(220px, 1fr))", gap: "0.75rem" }}>
-            <div className="glass-card" style={{ padding: "0.5rem" }}>
-              <div style={{ borderRadius: "10px", overflow: "hidden", background: "rgba(255,255,255,0.06)" }}>
-                <img src="/plot_actual_vs_predicted.png" alt="Visualization 1" style={{ width: "100%", height: "180px", objectFit: "cover", display: "block" }} />
+          <p style={{ marginTop: 0, marginBottom: "1rem" }}>Model visualizations and analysis plots.</p>
+          <div className="visual-gallery">
+            <div className="gallery-item">
+              <div className="gallery-image-wrapper">
+                <img src="/plot_actual_vs_predicted.png" alt="Actual vs Predicted Temperature" />
               </div>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.9rem", opacity: 0.85 }}>plot_actual_vs_predicted</div>
+              <div className="gallery-caption">Actual vs Predicted</div>
             </div>
 
-            <div className="glass-card" style={{ padding: "0.5rem" }}>
-              <div style={{ borderRadius: "10px", overflow: "hidden", background: "rgba(255,255,255,0.06)" }}>
-                <img src="/plot_feature_importance.png" alt="Visualization 2" style={{ width: "100%", height: "180px", objectFit: "cover", display: "block" }} />
+            <div className="gallery-item">
+              <div className="gallery-image-wrapper">
+                <img src="/plot_feature_importance.png" alt="Feature Importance Analysis" />
               </div>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.9rem", opacity: 0.85 }}>plot_feature_importance</div>
+              <div className="gallery-caption">Feature Importance</div>
             </div>
 
-            <div className="glass-card" style={{ padding: "0.5rem" }}>
-              <div style={{ borderRadius: "10px", overflow: "hidden", background: "rgba(255,255,255,0.06)" }}>
-                <img src="/plot_residuals.png" alt="Visualization 3" style={{ width: "100%", height: "180px", objectFit: "cover", display: "block" }} />
+            <div className="gallery-item">
+              <div className="gallery-image-wrapper">
+                <img src="/plot_residuals.png" alt="Residuals Distribution" />
               </div>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.9rem", opacity: 0.85 }}>plot_residuals</div>
+              <div className="gallery-caption">Residuals Plot</div>
             </div>
 
-            <div className="glass-card" style={{ padding: "0.5rem" }}>
-              <div style={{ borderRadius: "10px", overflow: "hidden", background: "rgba(255,255,255,0.06)" }}>
-                <img src="/plot_time_series.png" alt="Visualization 4" style={{ width: "100%", height: "180px", objectFit: "cover", display: "block" }} />
+            <div className="gallery-item">
+              <div className="gallery-image-wrapper">
+                <img src="/plot_time_series.png" alt="Time Series Prediction" />
               </div>
-              <div style={{ marginTop: "0.5rem", fontSize: "0.9rem", opacity: 0.85 }}>plot_time_series</div>
+              <div className="gallery-caption">Time Series</div>
             </div>
           </div>
         </section>
