@@ -6,6 +6,7 @@ import './App.css';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import AskMore from "./AskMore";
 import ModelInfo from "./ModelInfo";
+import ShapExplanation from "./ShapExplanation";
 
 // Parameter mapping with friendly names, units, and icons
 const PARAMETER_INFO = {
@@ -44,7 +45,10 @@ const WelcomeText = ({ text }) => {
 };
 
 const App = () => {
-  const [showLanding, setShowLanding] = useState(true); 
+  // Check URL parameter to skip landing page (for back navigation only)
+  const urlParams = new URLSearchParams(window.location.search);
+  const skipLanding = urlParams.get('dashboard') === 'true';
+  const [showLanding, setShowLanding] = useState(!skipLanding); 
   const [date, setDate] = useState('');
   const [city, setCity] = useState('bengaluru');
   const [prediction, setPrediction] = useState(null);
@@ -225,6 +229,14 @@ const App = () => {
                   onClick={() => window.location.href = "/model-info"}
                 >
                   Model Info
+                </motion.button>
+                <motion.button
+                  className="side-btn shap"
+                  whileHover={{ x: -6, scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => window.location.href = "/shap-explanation"}
+                >
+                  Scientific Explanation (SHAP)
                 </motion.button>
 
               </div>
@@ -538,6 +550,7 @@ const App = () => {
       />
 
       <Route path="/ask-more" element={<AskMore />} />
+      <Route path="/shap-explanation" element={<ShapExplanation />} />
       
     </Routes>
   </Router>

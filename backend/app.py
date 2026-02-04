@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import pandas as pd
 from joblib import load
@@ -580,6 +580,107 @@ PARAMETER_INFO = {
     'GWETTOP': {'name': 'Top Soil Wetness', 'unit': ''},
     'WS2M': {'name': 'Wind Speed', 'unit': 'm/s'},
 }
+
+# -------------------------------------------------------
+# SHAP Explainability Endpoints
+# -------------------------------------------------------
+
+# Path to SHAP artifacts
+SHAP_DIR = os.path.join(os.path.dirname(__file__), '..', 'train_solarplanets')
+
+# Human-friendly translations for feature names
+FEATURE_TRANSLATIONS = {
+    'sun_X': 'Seasonal solar positioning (East-West)',
+    'sun_Y': 'Seasonal solar positioning (North-South)',
+    'sun_Z': 'Seasonal solar positioning (Vertical)',
+    'sun_VX': 'Seasonal solar movement pattern',
+    'sun_VY': 'Solar seasonal cycle intensity',
+    'sun_VZ': 'Solar elevation changes',
+    'moon_X': 'Short-term lunar positioning',
+    'moon_Y': 'Lunar cycle phase effect',
+    'moon_Z': 'Lunar elevation influence',
+    'moon_VX': 'Short-term lunar variation',
+    'moon_VY': 'Lunar tidal pattern',
+    'moon_VZ': 'Lunar atmospheric influence',
+    'jupiter_X': 'Long-cycle planetary modulation',
+    'jupiter_Y': 'Jupiter orbital pattern',
+    'jupiter_Z': 'Long-term climate influence',
+    'jupiter_VX': 'Jupiter cycle variation',
+    'jupiter_VY': 'Multi-year climate pattern',
+    'jupiter_VZ': 'Long-term atmospheric modulation',
+    'saturn_X': 'Slow, stabilizing planetary influence',
+    'saturn_Y': 'Saturn orbital stability effect',
+    'saturn_Z': 'Long-term climate stabilization',
+    'saturn_VX': 'Decadal climate pattern',
+    'saturn_VY': 'Saturn stabilizing effect',
+    'saturn_VZ': 'Deep climate cycle influence',
+    'venus_X': 'Near-term planetary influence',
+    'venus_Y': 'Venus orbital proximity effect',
+    'venus_Z': 'Short-cycle planetary modulation',
+    'venus_VX': 'Venus cycle variation',
+    'venus_VY': 'Near-planetary atmospheric effect',
+    'venus_VZ': 'Venus-driven variability',
+    'Year': 'Long-term climate trend',
+    'Month': 'Seasonal calendar timing',
+    'Day': 'Daily variation pattern',
+    'DayOfYear': 'Seasonal calendar timing',
+    'WeekOfYear': 'Weekly seasonal pattern'
+}
+
+@app.route('/api/shap-analysis', methods=['GET'])
+def get_shap_analysis():
+    """Get SHAP analysis data for XAI explanation."""
+    try:
+        # Load SHAP feature importance CSV
+        shap_csv_path = os.path.join(SHAP_DIR, 'shap_t2m_feature_importance.csv')
+        
+        if not os.path.exists(shap_csv_path):
+            return jsonify({
+                'error': 'SHAP analysis not available. Please run training first.',
+                'available': False
+            }), 404
+        
+        shap_df = pd.read_csv(shap_csv_path)
+        
+        # Get top 5 features
+        top_features = shap_df.head(5).to_dict('records')
+        
+        # Translate feature names to human-friendly descriptions
+        translated_features = []
+        for feat in top_features:
+            feature_name = feat['Feature']
+            translated_features.append({
+                'feature': feature_name,
+                'description': FEATURE_TRANSLATIONS.get(feature_name, feature_name),
+                'contribution': round(feat['Contribution_Pct'], 1),
+                'shap_value': round(feat['Mean_Abs_SHAP'], 4)
+            })
+        
+        # Calculate category contributions
+        planetary_contribution = shap_df[shap_df['Feature'].str.contains('sun|moon|jupiter|venus|saturn', case=False)]['Contribution_Pct'].sum()
+        temporal_contribution = shap_df[shap_df['Feature'].isin(['Year', 'Month', 'Day', 'DayOfYear', 'WeekOfYear'])]['Contribution_Pct'].sum()
+        
+        return jsonify({
+            'available': True,
+            'top_features': translated_features,
+            'contribution_breakdown': {
+                'planetary': round(planetary_contribution, 1),
+                'temporal': round(temporal_contribution, 1)
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e), 'available': False}), 500
+
+@app.route('/api/shap-image/<filename>')
+def serve_shap_image(filename):
+    """Serve SHAP visualization images."""
+    allowed_files = ['shap_t2m_summary.png', 'shap_t2m_bar.png', 'shap_t2m_force.png']
+    
+    if filename not in allowed_files:
+        return jsonify({'error': 'File not found'}), 404
+    
+    return send_from_directory(SHAP_DIR, filename)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
