@@ -51,13 +51,37 @@ const AskMore = () => {
     <div className="chat-container">
       <div className="stars" />
 
+      {/* Back Button */}
+      <motion.button
+        onClick={() => (window.location.href = "/?dashboard=true")}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        style={{
+          position: "absolute",
+          left: "1.5rem",
+          top: "1.5rem",
+          background: "rgba(0, 242, 255, 0.1)",
+          border: "1px solid rgba(0, 242, 255, 0.3)",
+          borderRadius: "8px",
+          padding: "0.5rem 1rem",
+          color: "#00f2ff",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          fontSize: "0.9rem",
+          zIndex: 100,
+        }}
+      >
+        <ArrowLeft size={16} /> Back
+      </motion.button>
+
       <motion.div
         className="chat-glass"
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
       >
         <header className="chat-header">
-          <ArrowLeft onClick={() => window.location.href = "/"} />
           <h2>AstroWeather AI · Oracle</h2>
         </header>
 

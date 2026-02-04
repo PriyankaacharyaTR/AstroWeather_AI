@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Brain } from "lucide-react";
+import { Brain, ArrowLeft } from "lucide-react";
 import "./App.css";
 
 export default function ModelInfo() {
@@ -136,6 +136,31 @@ export default function ModelInfo() {
         style={{ maxWidth: "900px", textAlign: "left" }}
       >
         <div className="model-info-scroll">
+        {/* Back Button */}
+        <motion.button
+          onClick={() => (window.location.href = "/?dashboard=true")}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          style={{
+            position: "absolute",
+            left: "1.5rem",
+            top: "1.5rem",
+            background: "rgba(0, 242, 255, 0.1)",
+            border: "1px solid rgba(0, 242, 255, 0.3)",
+            borderRadius: "8px",
+            padding: "0.5rem 1rem",
+            color: "#00f2ff",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            fontSize: "0.9rem",
+            zIndex: 100,
+          }}
+        >
+          <ArrowLeft size={16} /> Back
+        </motion.button>
+        
         <header style={{ textAlign: "center" }}>
           <h1>
             <Brain className="icon" /> Model <span>Information</span>
