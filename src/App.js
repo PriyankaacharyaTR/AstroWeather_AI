@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Thermometer, Orbit, Gauge, Droplets, Wind, Cloud } from 'lucide-react';
+import { Thermometer, Orbit, Gauge, Droplets, Wind, Cloud, ArrowUpDown, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
@@ -52,6 +52,8 @@ const App = () => {
   const [error, setError] = useState(null);
   const [summary, setSummary] = useState('');
   const [summarizing, setSummarizing] = useState(false);
+  const [comparison, setComparison] = useState(null);
+  const [comparingTemp, setComparingTemp] = useState(false);
 
   const getPrediction = async () => {
     if (!date) return;
@@ -93,6 +95,29 @@ const App = () => {
       setError('Unable to generate summary. Please try again.');
     } finally {
       setSummarizing(false);
+    }
+  };
+
+  const handleCompareTemperature = async () => {
+    if (!date) {
+      setError('Please select a date first.');
+      return;
+    }
+
+    setComparingTemp(true);
+    setComparison(null);
+    try {
+      const response = await axios.post('http://127.0.0.1:5000/api/temperature-comparison', {
+        date: date,
+        city: city
+      });
+      setComparison(response.data);
+    } catch (err) {
+      console.error("Comparison failed", err);
+      const errMsg = err.response?.data?.error || 'Unable to fetch comparison. Check if WeatherAPI key is configured.';
+      setError(errMsg);
+    } finally {
+      setComparingTemp(false);
     }
   };
 
@@ -293,6 +318,181 @@ const App = () => {
                     >
                       {summarizing ? '🌌 Generating Summary...' : '✨ Summarize Weather Report'}
                     </motion.button>
+
+                    <motion.button
+                      className="compare-button"
+                      onClick={handleCompareTemperature}
+                      disabled={comparingTemp}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      style={{
+                        marginTop: '1rem',
+                        padding: '0.9rem 2rem',
+                        background: 'linear-gradient(45deg, #f59e0b, #ef4444)',
+                        border: 'none',
+                        borderRadius: '12px',
+                        color: '#000',
+                        cursor: comparingTemp ? 'not-allowed' : 'pointer',
+                        fontWeight: 'bold',
+                        fontSize: '1rem',
+                        fontFamily: 'Orbitron, sans-serif',
+                        opacity: comparingTemp ? 0.6 : 1,
+                        boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)'
+                      }}
+                    >
+                      {comparingTemp ? '🔄 Comparing...' : '🌡️ Compare with Real Weather'}
+                    </motion.button>
+
+                    {comparison && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="results comparison-section"
+                        style={{ marginTop: '1.5rem', textAlign: 'left' }}
+                      >
+                        <h3 style={{
+                          margin: '0 0 1.5rem 0',
+                          fontSize: '1.2rem',
+                          color: '#f59e0b',
+                          letterSpacing: '1px',
+                          fontWeight: '700',
+                          borderBottom: '2px solid rgba(245, 158, 11, 0.2)',
+                          paddingBottom: '0.75rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}>
+                          <ArrowUpDown size={20} />
+                          TEMPERATURE COMPARISON
+                        </h3>
+                        
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr',
+                          gap: '1.5rem',
+                          marginBottom: '1.5rem'
+                        }}>
+                          {/* Astro Prediction Box */}
+                          <div style={{
+                            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(0, 242, 255, 0.1))',
+                            borderRadius: '12px',
+                            padding: '1.5rem',
+                            border: '1px solid rgba(99, 102, 241, 0.3)',
+                            textAlign: 'center'
+                          }}>
+                            <p style={{ color: '#00f2ff', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: '600' }}>
+                              🌌 ASTRO PREDICTION
+                            </p>
+                            <h2 style={{ fontSize: '2.5rem', margin: '0.5rem 0', color: '#fff' }}>
+                              {comparison.astro_prediction.temperature}°C
+                            </h2>
+                            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem' }}>
+                              {comparison.astro_prediction.source}
+                            </p>
+                          </div>
+
+                          {/* Actual Weather Box */}
+                          <div style={{
+                            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.1))',
+                            borderRadius: '12px',
+                            padding: '1.5rem',
+                            border: '1px solid rgba(245, 158, 11, 0.3)',
+                            textAlign: 'center'
+                          }}>
+                            <p style={{ color: '#f59e0b', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: '600' }}>
+                              🌍 ACTUAL WEATHER
+                            </p>
+                            <h2 style={{ fontSize: '2.5rem', margin: '0.5rem 0', color: '#fff' }}>
+                              {comparison.actual_weather.temperature}°C
+                            </h2>
+                            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', marginBottom: '0.3rem' }}>
+                              (Avg Temperature)
+                            </p>
+                            <div style={{ 
+                              display: 'flex', 
+                              justifyContent: 'center', 
+                              gap: '1rem', 
+                              marginTop: '0.5rem',
+                              fontSize: '0.8rem'
+                            }}>
+                              <span style={{ color: '#60a5fa' }}>
+                                ❄️ Min: {comparison.actual_weather.min_temp}°C
+                              </span>
+                              <span style={{ color: '#f87171' }}>
+                                🔥 Max: {comparison.actual_weather.max_temp}°C
+                              </span>
+                            </div>
+                            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', marginTop: '0.5rem' }}>
+                              {comparison.actual_weather.source}
+                            </p>
+                            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                              {comparison.actual_weather.condition}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Difference Display */}
+                        <div style={{
+                          background: comparison.comparison.abs_difference <= 2 
+                            ? 'rgba(34, 197, 94, 0.15)' 
+                            : comparison.comparison.abs_difference <= 5 
+                              ? 'rgba(245, 158, 11, 0.15)'
+                              : 'rgba(239, 68, 68, 0.15)',
+                          borderRadius: '12px',
+                          padding: '1rem 1.5rem',
+                          textAlign: 'center',
+                          border: `1px solid ${comparison.comparison.abs_difference <= 2 
+                            ? 'rgba(34, 197, 94, 0.3)' 
+                            : comparison.comparison.abs_difference <= 5 
+                              ? 'rgba(245, 158, 11, 0.3)'
+                              : 'rgba(239, 68, 68, 0.3)'}`
+                        }}>
+                          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+                            Difference
+                          </p>
+                          <h3 style={{ 
+                            fontSize: '1.5rem', 
+                            margin: 0, 
+                            color: comparison.comparison.abs_difference <= 2 
+                              ? '#22c55e' 
+                              : comparison.comparison.abs_difference <= 5 
+                                ? '#f59e0b'
+                                : '#ef4444'
+                          }}>
+                            {comparison.comparison.astro_higher ? '+' : ''}{comparison.comparison.difference}°C
+                          </h3>
+                          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', marginTop: '0.5rem' }}>
+                            {comparison.comparison.abs_difference <= 2 
+                              ? '✅ Excellent accuracy!' 
+                              : comparison.comparison.abs_difference <= 5 
+                                ? '⚡ Good prediction'
+                                : '⚠️ Notable variance'}
+                          </p>
+                        </div>
+
+                        {/* Disclaimer */}
+                        <div style={{
+                          marginTop: '1rem',
+                          padding: '0.75rem 1rem',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '0.5rem'
+                        }}>
+                          <AlertTriangle size={16} style={{ color: '#f59e0b', flexShrink: 0, marginTop: '2px' }} />
+                          <p style={{
+                            color: 'rgba(255, 255, 255, 0.6)',
+                            fontSize: '0.75rem',
+                            margin: 0,
+                            lineHeight: 1.5,
+                            textAlign: 'left'
+                          }}>
+                            {comparison.disclaimer}
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
 
                     {summary && (
                       <motion.div

@@ -1,0 +1,18 @@
+{
+  "feature_columns": [
+    "moon_X", "moon_Y", "moon_Z", "moon_VX", "moon_VY", "moon_VZ",
+    "sun_X", "sun_Y", "sun_Z", "sun_VX", "sun_VY", "sun_VZ",
+    "jupiter_X", "jupiter_Y", "jupiter_Z", "jupiter_VX", "jupiter_VY", "jupiter_VZ",
+    "venus_X", "venus_Y", "venus_Z", "venus_VX", "venus_VY", "venus_VZ",
+    "saturn_X", "saturn_Y", "saturn_Z", "saturn_VX", "saturn_VY", "saturn_VZ",
+    "Year", "Month", "Day", "DayOfYear", "WeekOfYear"
+  ],
+  "target_columns": ["T2M", "PS", "QV2M", "WS2M", "GWETTOP"],
+  "planetary_bodies": {
+    "moon": "301",
+    "sun": "10",
+    "jupiter": "599",
+    "venus": "299",
+    "saturn": "699"
+  }
+}

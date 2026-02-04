@@ -54,13 +54,17 @@
 import requests
 import pandas as pd
 import io
+import json
+import os
 
-FEATURE_ORDER = [
-    "moon_X", "moon_Y", "moon_Z", "moon_VX", "moon_VY", "moon_VZ",
-    "sun_X", "sun_Y", "sun_Z", "sun_VX", "sun_VY", "sun_VZ",
-    "jupiter_X", "jupiter_Y", "jupiter_Z", "jupiter_VX", "jupiter_VY", "jupiter_VZ",
-    "venus_X", "venus_Y", "venus_Z", "venus_VX", "venus_VY", "venus_VZ"
-]
+# Load feature columns from JSON
+FEATURE_CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'feature_columns.json')
+with open(FEATURE_CONFIG_PATH, 'r') as f:
+    FEATURE_CONFIG = json.load(f)
+
+FEATURE_ORDER = FEATURE_CONFIG['feature_columns']
+PLANETARY_BODIES = FEATURE_CONFIG['planetary_bodies']
+TARGET_COLUMNS = FEATURE_CONFIG['target_columns']
 
 def fetch_nasa_vector(obj_id, date_str):
     """Calls JPL Horizons API for a single body."""
@@ -101,21 +105,40 @@ def fetch_nasa_vector(obj_id, date_str):
     }
 
 def get_planet_features(date_str):
-    bodies = {
-        "sun": "10",
-        "moon": "301",
-        "jupiter": "5",
-        "venus": "299"
-    }
-
+    """
+    Fetch planetary vectors from NASA JPL Horizons and build feature row
+    matching the training dataset structure.
+    """
     all_data = {}
-    for name, code in bodies.items():
+    planetary_vectors = {}
+    
+    # Fetch planetary vectors for each body
+    for name, code in PLANETARY_BODIES.items():
         vec = fetch_nasa_vector(code, date_str)
-        all_data[f"{name}_X"]  = vec["X"]
-        all_data[f"{name}_Y"]  = vec["Y"]
-        all_data[f"{name}_Z"]  = vec["Z"]
+        all_data[f"{name}_X"] = vec["X"]
+        all_data[f"{name}_Y"] = vec["Y"]
+        all_data[f"{name}_Z"] = vec["Z"]
         all_data[f"{name}_VX"] = vec["VX"]
         all_data[f"{name}_VY"] = vec["VY"]
         all_data[f"{name}_VZ"] = vec["VZ"]
+        planetary_vectors[name] = vec
+    
+    # Add date-derived features
+    date = pd.to_datetime(date_str)
+    all_data["Year"] = date.year
+    all_data["Month"] = date.month
+    all_data["Day"] = date.day
+    all_data["DayOfYear"] = date.dayofyear
+    all_data["WeekOfYear"] = int(date.isocalendar().week)
+    
+    # Return DataFrame with correct column order matching training
+    df = pd.DataFrame([all_data])[FEATURE_ORDER]
+    return df, planetary_vectors
 
-    return pd.DataFrame([all_data])[FEATURE_ORDER]
+
+def get_planet_features_simple(date_str):
+    """
+    Simple version that returns just the DataFrame (for backward compatibility).
+    """
+    df, _ = get_planet_features(date_str)
+    return df

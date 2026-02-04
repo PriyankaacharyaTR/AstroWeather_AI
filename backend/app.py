@@ -2,28 +2,65 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pandas as pd
 from joblib import load
-from get_planets import get_planet_features
+from get_planets import get_planet_features, get_planet_features_simple, FEATURE_ORDER, TARGET_COLUMNS as PLANET_TARGET_COLUMNS
 import sys
 import os
+import json
+import requests
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'rag', 'app'))
 from chatbot import ask, client, MODEL_NAME
+
+# WeatherAPI.com API key from environment variable
+WEATHER_API_KEY = os.getenv('WEATHER_API_KEY')
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for React app
 
-# Load existing planet-based model
-planet_model_path = os.path.join(os.path.dirname(__file__), 'weather_planet_model.pkl')
-planet_model = load(planet_model_path)
+# Load feature columns configuration
+FEATURE_CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'feature_columns.json')
+with open(FEATURE_CONFIG_PATH, 'r') as f:
+    FEATURE_CONFIG = json.load(f)
 
-# Load Bengaluru date-feature model (Multi-Output RF)
+# Load Bengaluru planetary-feature model (Multi-Output RF trained on planetary vectors)
 bangaluru_model_path = os.path.join(os.path.dirname(__file__), 'bangaluru_weather_model.pkl')
 bangaluru_model = load(bangaluru_model_path)
 
-# Load Delhi date-feature model (Multi-Output RF)
+# Load Delhi date-feature model (Multi-Output RF) - keeping for backward compatibility
 delhi_model_path = os.path.join(os.path.dirname(__file__), 'delhi_weather_model.pkl')
 delhi_model = load(delhi_model_path)
 
+# Load Bengaluru training dataset for date lookup
+BANGALURU_DATASET_PATH = os.path.join(os.path.dirname(__file__), '..', 'train_solarplanets', 'final_dataset_bangaluru.csv')
+try:
+    bangaluru_df = pd.read_csv(BANGALURU_DATASET_PATH)
+    bangaluru_df['Date'] = pd.to_datetime(bangaluru_df['Date']).dt.strftime('%Y-%m-%d')
+    BANGALURU_DATASET_AVAILABLE = True
+except:
+    bangaluru_df = None
+    BANGALURU_DATASET_AVAILABLE = False
+
+# Load Delhi training dataset for date lookup
+DELHI_DATASET_PATH = os.path.join(os.path.dirname(__file__), '..', 'train_solarplanets', 'final_dataset_delhi.csv')
+try:
+    delhi_df = pd.read_csv(DELHI_DATASET_PATH)
+    delhi_df['Date'] = pd.to_datetime(delhi_df['Date']).dt.strftime('%Y-%m-%d')
+    DELHI_DATASET_AVAILABLE = True
+except:
+    delhi_df = None
+    DELHI_DATASET_AVAILABLE = False
+
 TARGET_COLUMNS = ["T2M", "PS", "QV2M", "WS2M", "GWETTOP"]
+
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint."""
+    return jsonify({'status': 'ok'}), 200
 
 
 def build_date_features(date_str: str) -> pd.DataFrame:
@@ -42,28 +79,76 @@ def build_date_features(date_str: str) -> pd.DataFrame:
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    """Legacy endpoint - redirects to predict-bangaluru."""
     data = request.get_json()
     date_str = data.get('date')
     if not date_str:
         return jsonify({'error': 'Date is required'}), 400
 
     try:
-        # Fetch planet features
-        features = get_planet_features(date_str)
+        # Fetch planet features with date features
+        features, planetary_vectors = get_planet_features(date_str)
 
-        # Prediction
-        prediction = planet_model.predict(features)[0]
+        # Prediction using Bangaluru model
+        prediction = bangaluru_model.predict(features)[0]
+
+        predictions = {
+            TARGET_COLUMNS[i]: round(float(prediction[i]), 2)
+            for i in range(len(TARGET_COLUMNS))
+        }
 
         # Convert features to dict for JSON response
         features_dict = features.iloc[0].to_dict()
 
         return jsonify({
-            'temperature': round(prediction, 2),
+            'temperature': predictions['T2M'],
             'date': date_str,
-            'features': features_dict
+            'features': features_dict,
+            'predictions': predictions,
+            'planetary_vectors_km_km_per_s': planetary_vectors
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e), 'error_type': type(e).__name__}), 500
+
+
+@app.route('/predict-features', methods=['POST'])
+def predict_features():
+    """
+    Predict directly from provided features.
+    Request body should contain all feature keys in feature_columns.json.
+    """
+    data = request.get_json() or {}
+    
+    if not data:
+        return jsonify({'error': 'Feature data is required'}), 400
+    
+    try:
+        # Validate that all required features are present
+        missing_features = [f for f in FEATURE_ORDER if f not in data]
+        if missing_features:
+            return jsonify({
+                'error': f'Missing features: {missing_features}',
+                'required_features': FEATURE_ORDER
+            }), 400
+        
+        # Build feature DataFrame in correct order
+        feature_data = {col: [data[col]] for col in FEATURE_ORDER}
+        features = pd.DataFrame(feature_data)[FEATURE_ORDER]
+        
+        # Make prediction
+        prediction = bangaluru_model.predict(features)[0]
+        
+        predictions = {
+            TARGET_COLUMNS[i]: round(float(prediction[i]), 2)
+            for i in range(len(TARGET_COLUMNS))
+        }
+        
+        return jsonify({
+            'predictions': predictions,
+            'feature_count': len(FEATURE_ORDER)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e), 'error_type': type(e).__name__}), 500
 
 
 @app.route('/predict-bangaluru', methods=['POST'])
@@ -74,7 +159,40 @@ def predict_bangaluru():
         return jsonify({'error': 'Date is required'}), 400
 
     try:
-        features = build_date_features(date_str)
+        planetary_vectors = None
+        from_csv = False
+        
+        # Check if date exists in CSV dataset first
+        if BANGALURU_DATASET_AVAILABLE and bangaluru_df is not None:
+            csv_row = bangaluru_df[bangaluru_df['Date'] == date_str]
+            if not csv_row.empty:
+                # Use features from CSV
+                from_csv = True
+                date = pd.to_datetime(date_str)
+                
+                # Build feature row from CSV data
+                feature_data = {}
+                for col in FEATURE_ORDER:
+                    if col in csv_row.columns:
+                        feature_data[col] = csv_row[col].values[0]
+                    elif col == 'Year':
+                        feature_data[col] = date.year
+                    elif col == 'Month':
+                        feature_data[col] = date.month
+                    elif col == 'Day':
+                        feature_data[col] = date.day
+                    elif col == 'DayOfYear':
+                        feature_data[col] = date.dayofyear
+                    elif col == 'WeekOfYear':
+                        feature_data[col] = int(date.isocalendar().week)
+                
+                features = pd.DataFrame([feature_data])[FEATURE_ORDER]
+        
+        if not from_csv:
+            # Fetch planetary vectors from NASA JPL Horizons
+            features, planetary_vectors = get_planet_features(date_str)
+        
+        # Make prediction
         prediction = bangaluru_model.predict(features)[0]
 
         predictions = {
@@ -82,20 +200,26 @@ def predict_bangaluru():
             for i in range(len(TARGET_COLUMNS))
         }
 
+        # Build feature payload for response
         feature_payload = {
-            k: (int(float(v)) if float(v).is_integer() else float(v))
+            k: (int(float(v)) if isinstance(v, (int, float)) and float(v).is_integer() else float(v) if isinstance(v, (int, float)) else v)
             for k, v in features.iloc[0].to_dict().items()
         }
 
-        return jsonify(
-            {
-                'date': date_str,
-                'features': feature_payload,
-                'predictions': predictions,
-            }
-        )
+        response_data = {
+            'date': date_str,
+            'features': feature_payload,
+            'predictions': predictions,
+            'data_source': 'csv' if from_csv else 'nasa_jpl_horizons'
+        }
+        
+        # Include planetary vectors if fetched from NASA
+        if planetary_vectors:
+            response_data['planetary_vectors_km_km_per_s'] = planetary_vectors
+
+        return jsonify(response_data)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e), 'error_type': type(e).__name__}), 500
 
 
 @app.route('/predict-delhi', methods=['POST'])
@@ -106,7 +230,40 @@ def predict_delhi():
         return jsonify({'error': 'Date is required'}), 400
 
     try:
-        features = build_date_features(date_str)
+        planetary_vectors = None
+        from_csv = False
+        
+        # Check if date exists in CSV dataset first
+        if DELHI_DATASET_AVAILABLE and delhi_df is not None:
+            csv_row = delhi_df[delhi_df['Date'] == date_str]
+            if not csv_row.empty:
+                # Use features from CSV
+                from_csv = True
+                date = pd.to_datetime(date_str)
+                
+                # Build feature row from CSV data
+                feature_data = {}
+                for col in FEATURE_ORDER:
+                    if col in csv_row.columns:
+                        feature_data[col] = csv_row[col].values[0]
+                    elif col == 'Year':
+                        feature_data[col] = date.year
+                    elif col == 'Month':
+                        feature_data[col] = date.month
+                    elif col == 'Day':
+                        feature_data[col] = date.day
+                    elif col == 'DayOfYear':
+                        feature_data[col] = date.dayofyear
+                    elif col == 'WeekOfYear':
+                        feature_data[col] = int(date.isocalendar().week)
+                
+                features = pd.DataFrame([feature_data])[FEATURE_ORDER]
+        
+        if not from_csv:
+            # Fetch planetary vectors from NASA JPL Horizons
+            features, planetary_vectors = get_planet_features(date_str)
+        
+        # Make prediction
         prediction = delhi_model.predict(features)[0]
 
         predictions = {
@@ -114,20 +271,213 @@ def predict_delhi():
             for i in range(len(TARGET_COLUMNS))
         }
 
+        # Build feature payload for response
         feature_payload = {
-            k: (int(float(v)) if float(v).is_integer() else float(v))
+            k: (int(float(v)) if isinstance(v, (int, float)) and float(v).is_integer() else float(v) if isinstance(v, (int, float)) else v)
             for k, v in features.iloc[0].to_dict().items()
         }
 
-        return jsonify(
-            {
-                'date': date_str,
-                'features': feature_payload,
-                'predictions': predictions,
-            }
-        )
+        response_data = {
+            'date': date_str,
+            'features': feature_payload,
+            'predictions': predictions,
+            'data_source': 'csv' if from_csv else 'nasa_jpl_horizons'
+        }
+        
+        # Include planetary vectors if fetched from NASA
+        if planetary_vectors:
+            response_data['planetary_vectors_km_km_per_s'] = planetary_vectors
+
+        return jsonify(response_data)
+    except Exception as e:
+        return jsonify({'error': str(e), 'error_type': type(e).__name__}), 500
+
+
+def fetch_actual_weather(city: str, date_str: str) -> dict:
+    """
+    Fetch actual weather data from WeatherAPI.com.
+    For historical/future dates, uses history or forecast API accordingly.
+    Returns avg temperature and weather condition.
+    """
+    if not WEATHER_API_KEY:
+        raise ValueError("WEATHER_API_KEY environment variable not set")
+    
+    # Map city names to WeatherAPI locations
+    city_mapping = {
+        'bengaluru': 'Bengaluru,India',
+        'bangalore': 'Bengaluru,India',
+        'delhi': 'Delhi,India'
+    }
+    
+    location = city_mapping.get(city.lower(), f"{city},India")
+    
+    # Determine if we need history or forecast API
+    from datetime import datetime
+    target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    today = datetime.now().date()
+    
+    if target_date <= today:
+        # Use history API for past dates
+        url = f"http://api.weatherapi.com/v1/history.json"
+        params = {
+            'key': WEATHER_API_KEY,
+            'q': location,
+            'dt': date_str
+        }
+    else:
+        # Use forecast API for future dates (up to 14 days)
+        days_ahead = (target_date - today).days
+        if days_ahead > 14:
+            raise ValueError("WeatherAPI forecast is limited to 14 days ahead")
+        url = f"http://api.weatherapi.com/v1/forecast.json"
+        params = {
+            'key': WEATHER_API_KEY,
+            'q': location,
+            'dt': date_str,
+            'days': 1
+        }
+    
+    response = requests.get(url, params=params)
+    response.raise_for_status()
+    data = response.json()
+    
+    # Extract forecast day data
+    if 'forecast' in data and data['forecast']['forecastday']:
+        day_data = data['forecast']['forecastday'][0]['day']
+        return {
+            'avg_temp': day_data.get('avgtemp_c'),
+            'max_temp': day_data.get('maxtemp_c'),
+            'min_temp': day_data.get('mintemp_c'),
+            'condition': day_data.get('condition', {}).get('text', 'N/A'),
+            'humidity': day_data.get('avghumidity'),
+            'wind_kph': day_data.get('maxwind_kph')
+        }
+    
+    raise ValueError("No weather data available for the specified date")
+
+
+@app.route('/api/temperature-comparison', methods=['POST'])
+def temperature_comparison():
+    """
+    Compare astro-based temperature prediction with actual weather data.
+    Returns both values and the difference.
+    """
+    data = request.get_json() or {}
+    date_str = data.get('date')
+    city = data.get('city', 'bengaluru')
+    
+    if not date_str:
+        return jsonify({'error': 'Date is required'}), 400
+    
+    try:
+        # Get astro-based prediction
+        planetary_vectors = None
+        data_source = 'nasa_jpl_horizons'
+        
+        if city.lower() in ['bengaluru', 'bangalore']:
+            # Check CSV first for Bengaluru
+            from_csv = False
+            if BANGALURU_DATASET_AVAILABLE and bangaluru_df is not None:
+                csv_row = bangaluru_df[bangaluru_df['Date'] == date_str]
+                if not csv_row.empty:
+                    from_csv = True
+                    data_source = 'csv'
+                    date = pd.to_datetime(date_str)
+                    feature_data = {}
+                    for col in FEATURE_ORDER:
+                        if col in csv_row.columns:
+                            feature_data[col] = csv_row[col].values[0]
+                        elif col == 'Year':
+                            feature_data[col] = date.year
+                        elif col == 'Month':
+                            feature_data[col] = date.month
+                        elif col == 'Day':
+                            feature_data[col] = date.day
+                        elif col == 'DayOfYear':
+                            feature_data[col] = date.dayofyear
+                        elif col == 'WeekOfYear':
+                            feature_data[col] = int(date.isocalendar().week)
+                    features = pd.DataFrame([feature_data])[FEATURE_ORDER]
+            
+            if not from_csv:
+                features, planetary_vectors = get_planet_features(date_str)
+            
+            prediction = bangaluru_model.predict(features)[0]
+        else:
+            # Delhi uses planetary features too
+            from_csv = False
+            if DELHI_DATASET_AVAILABLE and delhi_df is not None:
+                csv_row = delhi_df[delhi_df['Date'] == date_str]
+                if not csv_row.empty:
+                    from_csv = True
+                    data_source = 'csv'
+                    date = pd.to_datetime(date_str)
+                    feature_data = {}
+                    for col in FEATURE_ORDER:
+                        if col in csv_row.columns:
+                            feature_data[col] = csv_row[col].values[0]
+                        elif col == 'Year':
+                            feature_data[col] = date.year
+                        elif col == 'Month':
+                            feature_data[col] = date.month
+                        elif col == 'Day':
+                            feature_data[col] = date.day
+                        elif col == 'DayOfYear':
+                            feature_data[col] = date.dayofyear
+                        elif col == 'WeekOfYear':
+                            feature_data[col] = int(date.isocalendar().week)
+                    features = pd.DataFrame([feature_data])[FEATURE_ORDER]
+            
+            if not from_csv:
+                features, planetary_vectors = get_planet_features(date_str)
+            
+            prediction = delhi_model.predict(features)[0]
+        
+        astro_temp = round(float(prediction[0]), 2)  # T2M is index 0
+        
+        # Fetch actual weather from WeatherAPI
+        actual_weather = fetch_actual_weather(city, date_str)
+        actual_temp = actual_weather.get('avg_temp')
+        
+        # Calculate difference
+        difference = round(astro_temp - actual_temp, 2) if actual_temp is not None else None
+        abs_difference = abs(difference) if difference is not None else None
+        
+        return jsonify({
+            'date': date_str,
+            'city': city.capitalize(),
+            'data_source': data_source,
+            'astro_prediction': {
+                'temperature': astro_temp,
+                'unit': '°C',
+                'source': 'AstroWeather AI Model (Planetary Features)' if data_source != 'date_features' else 'AstroWeather AI Model'
+            },
+            'actual_weather': {
+                'temperature': actual_temp,
+                'max_temp': actual_weather.get('max_temp'),
+                'min_temp': actual_weather.get('min_temp'),
+                'condition': actual_weather.get('condition'),
+                'humidity': actual_weather.get('humidity'),
+                'wind_kph': actual_weather.get('wind_kph'),
+                'unit': '°C',
+                'source': 'WeatherAPI.com'
+            },
+            'comparison': {
+                'difference': difference,
+                'abs_difference': abs_difference,
+                'astro_higher': difference > 0 if difference is not None else None
+            },
+            'planetary_vectors_km_km_per_s': planetary_vectors,
+            'disclaimer': 'Astro predictions are based on ML models trained on planetary position data. Actual weather data is sourced from WeatherAPI.com and may vary.'
+        })
+    
+    except ValueError as ve:
+        return jsonify({'error': str(ve)}), 400
+    except requests.exceptions.RequestException as re:
+        return jsonify({'error': f'Weather API error: {str(re)}'}), 503
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/chat', methods=['POST'])
 def chat():
