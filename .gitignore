@@ -7,17 +7,48 @@
 
 # testing
 /coverage
+/raw_pdfs
+/raw_text
 
 # production
 /build
 
-# misc
-.DS_Store
+# Python
+*.pkl
+*.pyc
+*.pyo
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# ML Models and Data
+*.h5
+*.hdf5
+*.joblib
+*.model
+weather_planet_model.pkl
+
+# Vector stores
+*.faiss
+*.pkl
+/rag/vectorstore/
+/vectorstore/
+
+# Environment variables
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+*.env
 
+# misc
+.DS_Store
+
+# logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
+venv/ 
